@@ -19,7 +19,12 @@ def validation(
     Given a list of the yearly datasets and the combined dataset, performs
     validation checks to ensure that the datasets meet the expected criteria.
     """
-    needed_columns = ['SEQN', 'SDDSRVYR', 'DIQ010', 'RIAGENDR', 'RIDAGEYR', 'RIDRETH1', 'DMDEDUC2', 'WTINT2YR', 'WTMEC2YR', 'LBXGH', 'A1C_Based_Diabetes', 'Undiagnosed_Status', "BMXBMI", "SDMVSTRA", "SDMVPSU"]
+    needed_columns = [
+        'SEQN', 'SDDSRVYR', 'DIQ010', 'RIAGENDR', 'RIDAGEYR',
+        'RIDRETH1', 'DMDEDUC2', 'WTINT2YR', 'WTMEC2YR', 'LBXGH',
+        'A1C_Based_Diabetes', 'Undiagnosed_Status', 'BMXBMI',
+        'SDMVSTRA', 'SDMVPSU'
+    ]
     data_E, data_F, data_G, data_H = datasets
     for i, ds in enumerate(datasets):
         assert set(ds.columns) == set(needed_columns)
@@ -47,18 +52,23 @@ def validation(
     assert full_data['SEQN'].notna().all()
     assert (full_data['WTINT2YR'].fillna(0) >= 0).all()
     assert (full_data['WTMEC2YR'].fillna(0) >= 0).all()
-    assert 'WTINT8YR' in full_data.columns and 'WTMEC8YR' in full_data.columns
-    
+    assert ('WTINT8YR' in full_data.columns and
+            'WTMEC8YR' in full_data.columns)
+
     for col in ["RIDRETH1", "DMDEDUC2", "RIAGENDR"]:
         if col in full_data.columns:
             for value in full_data[col].unique():
                 if pd.notna(value):
                     subset = full_data[full_data[col] == value]
-                    pct_undiagnosed = (
-                        subset[subset["Undiagnosed_Status"] == 1]["WTMEC8YR"].sum() / 
-                        subset["WTMEC8YR"].sum() * 100
+                    undiag_sum = (
+                        subset[subset["Undiagnosed_Status"] == 1]["WTMEC8YR"]
+                        .sum()
                     )
-                    assert 0 <= pct_undiagnosed <= 100, \
-                        f"Undiagnosed percentage for {col}={value} is {pct_undiagnosed}, should be 0-100"
-    
+                    total_sum = subset["WTMEC8YR"].sum()
+                    pct_undiagnosed = undiag_sum / total_sum * 100
+                    assert 0 <= pct_undiagnosed <= 100, (
+                        f"Undiagnosed percentage for {col}={value} "
+                        f"is {pct_undiagnosed}, should be 0-100"
+                    )
+
     print("All data assertions passed.")
